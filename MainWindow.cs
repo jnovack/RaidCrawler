@@ -1190,7 +1190,6 @@ namespace RaidCrawler
                 return;
             ShowExtraMoves = !ShowExtraMoves;
             LabelMoves.Text = ShowExtraMoves ? "Extra:" : "Moves:";
-            LabelMoves.Location = ShowExtraMoves ? ShowExtra : Default;
             var extra_moves = new ushort[] { 0, 0, 0, 0 };
             for (int i = 0; i < encounter.ExtraMoves.Length; i++)
                 if (i < extra_moves.Count()) extra_moves[i] = encounter.ExtraMoves[i];
@@ -1271,5 +1270,6 @@ namespace RaidCrawler
         {
             return StatDaySkipSuccess;
         }
+
     }
 }
