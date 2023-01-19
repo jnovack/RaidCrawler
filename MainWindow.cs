@@ -9,6 +9,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
+using System.Windows.Forms.VisualStyles;
 using static RaidCrawler.Structures.Offsets;
 using static SysBot.Base.SwitchButton;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -993,6 +994,19 @@ namespace RaidCrawler
 
         private async Task ReadRaids(CancellationToken token)
         {
+            // Export
+            DateTime localTime = DateTime.Now;
+            string path = Directory.GetCurrentDirectory();
+            if (!Directory.Exists(path + "\\raids"))
+            {
+                Directory.CreateDirectory(path + "\\raids");
+            }
+            String file = path + "\\raids\\" + localTime.ToString("s").Replace(":", "") + ".csv";
+            String separator = ",";
+            StringBuilder fileout = new StringBuilder();
+            String[] headings = { "Seed", "EC", "PID", "Difficulty", "Shiny", "Species", "Tera Type", "IVs", "Gender", "Nature", "Ability" };
+            fileout.AppendLine(string.Join(separator, headings));
+
             toolStripStatus.Text = "Parsing pointer...";
             offset = await OffsetUtil.GetPointerAddress(RaidBlockPointer, CancellationToken.None);
 
@@ -1017,9 +1031,27 @@ namespace RaidCrawler
                     Raids.Add(raid);
                     Encounters.Add(encounter);
                     RewardsList.Add(Structures.Rewards.GetRewards(encounter, raid.Seed, raid.TeraType, RaidBoost.SelectedIndex));
+
+                    // Export
+                    var blank = new PK9 { Species = encounter.Species, Form = encounter.Form };
+                    Encounter9RNG.GenerateData(blank, Raid.GetParam(encounter), EncounterCriteria.Unrestricted, raid.Seed);
+                    String[] row = { $"{raid.Seed:X8}", $"{raid.EC:X8}", GetPIDString(raid, encounter).Replace(" (☆)", ""), $"{encounter.Stars}", $"{raid.IsShiny}", Raid.strings.Species[encounter.Species], Raid.strings.types[Raid.GetTeraType(encounter, raid)],
+                        IVsString(ToSpeedLast(blank.IVs)), $"{(Gender)blank.Gender}", $"{Raid.strings.Natures[blank.Nature]}", $"{Raid.strings.Ability[blank.Ability]}" };
+                    fileout.AppendLine(string.Join(separator, row));
+
                 }
                 if (raid.IsEvent)
                     eventct++;
+            }
+
+            // Export
+            try
+            {
+                File.AppendAllText(file, fileout.ToString());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Data could not be written to " + file);
             }
 
             toolStripStatus.Text = "Completed!";
